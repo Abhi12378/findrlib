@@ -277,3 +277,10 @@
 .sidebar-header .brand-mark .brand-image{width:100%;height:100%;object-fit:cover}
 @media(max-width:700px){.top-brand-wordmark{flex-basis:165px;width:165px;height:44px}}
 @media(max-width:360px){.top-brand-wordmark{flex-basis:139px;width:139px;height:38px}}
+/* Compact wordmark with a bundled icon URL accepted by existing local servers. */
+.top-brand .top-brand-mark{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;overflow:hidden;border-radius:0;background:#fff}
+.top-brand .top-brand-mark .brand-image{display:block;width:100%;height:100%;object-fit:contain}
+.top-brand-name{display:inline-block;color:#122d34;font-size:18px;font-weight:800;letter-spacing:-.8px;line-height:1}
+.top-brand-name span{color:#0ca58c}
+@media(max-width:700px){.top-brand .top-brand-mark{flex-basis:38px;width:38px;height:38px}.top-brand-name{font-size:16px}}
+@media(max-width:360px){.top-brand .top-brand-mark{flex-basis:34px;width:34px;height:34px}.top-brand-name{font-size:14px}}
