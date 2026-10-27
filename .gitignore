@@ -1,0 +1,13 @@
+.env
+.env.*
+config.local.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite
+*.db
+node_modules/
+netlify-dist/
+__pycache__/
+*.pyc
