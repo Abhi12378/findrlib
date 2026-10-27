@@ -3,8 +3,9 @@ const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 const STORAGE_BOOKMARKS = "resourcefinder.bookmarks.v1";
 const STORAGE_COLLECTIONS = "resourcefinder.collections.v1";
 const SEARCH_SOURCES = ["github","videos","web","books","papers","documents","tools"];
+const SOURCE_HEALTH_KEY = "resourcefinder.source-health.v1";
 const state = {
-  view: "home", profile: {id:"guest", name:"Guest"}, history: [], supportEmail:"", catalogRefresh: null, nightlyInstalled: false, googleReady: false, hosted: false, backgroundCrawler: true, videoMetadata: true, availableSources: null, tab: "all", query: "", catalog: [], catalogTotal: 0,
+  view: "home", profile: {id:"guest", name:"Guest"}, history: [], supportEmail:"", sourceHealth:{}, catalogRefresh: null, nightlyInstalled: false, googleReady: false, hosted: location.hostname.endsWith(".netlify.app"), backgroundCrawler: true, videoMetadata: true, availableSources: null, tab: "all", query: "", catalog: [], catalogTotal: 0,
   catalogOffset: 0, catalogLoading: false, catalogError: false, featured: [], live: {}, crawled: [], loading: new Set(), showLimit: 30,
   crawl: null, checkedUrls: new Set(), loadingMore: false, pendingCrawl: false,
   bookmarks: [],
@@ -67,6 +68,7 @@ function renderHome() {
     "Your signed-in workspace is saved in this browser and opens again after a verified Google sign-in." : "";
   $("#homeWorkspaceSummary").textContent = signedIn ?
     "Saved locally for " + state.profile.name + " on this browser." : "";
+  renderSupport();
   $("#recentSearches").innerHTML = state.history.length ?
     state.history.slice(0, 8).map((entry) => '<button class="recent-query" data-recent="' +
       escapeHtml(entry.q) + '"><span>' + assetIcon("search", "recent-icon") + '</span>' + escapeHtml(entry.q) + '</button>').join("") :
@@ -98,23 +100,59 @@ function renderRefresh(info) {
 }
 function renderHealth(snapshot) {
   const node = $("#providerHealth");
-  if (!node || !snapshot?.providers) return;
+  if (!node) return;
+  const providers = snapshot?.providers || state.sourceHealth;
+  const observed = SEARCH_SOURCES.filter((source) => providers[source] && providers[source].status !== "unobserved");
+  if (!observed.length) {
+    $("#healthBadgeText").textContent = "Awaiting search";
+    $("#agentStatus").textContent = "Sources checked on search";
+    node.innerHTML = '<div class="health-empty">Run a search to check all seven sources. Recent results will appear here.</div>';
+    return;
+  }
   const labels = {github:"GitHub", videos:"YouTube", web:"Web", books:"Open Library", papers:"Research paper", documents:"Documents", tools:"Tools & apps"};
-  const states = Object.values(snapshot.providers);
-  const failing = states.filter((item) => item.status === "degraded" || item.status === "down").length;
-  const pending = states.filter((item) => item.status === "unobserved").length;
-  $("#agentStatus").textContent = failing ? failing + " source" + (failing === 1 ? "" : "s") + " needs attention" :
-    pending ? pending + " source check" + (pending === 1 ? "" : "s") + " pending" :
-    "Live sources responding";
-  node.innerHTML = Object.entries(snapshot.providers).map(([key, info]) => {
-    const name = labels[key] || key;
-    const latency = info.median_ms == null ? "" : " · median " + info.median_ms + " ms";
-    const detail = info.reason || (info.status === "unobserved" ? "Automatic check pending" :
-      info.status === "down" ? "Recent requests failed" :
-      info.status === "degraded" ? "Some requests failed or slowed" : "Responding");
-    return '<div class="health-row"><strong>' + escapeHtml(name) + '</strong><span class="health-state ' +
-      escapeHtml(info.status) + '">' + escapeHtml(info.status === "unobserved" ? "pending" : info.status) + '</span><small>' + escapeHtml(detail + latency) + '</small></div>';
+  const failing = observed.filter((source) => ["degraded","down"].includes(providers[source].status)).length;
+  $("#healthBadgeText").textContent = observed.length + " of " + SEARCH_SOURCES.length + " checked";
+  $("#agentStatus").textContent = failing ? failing + " source" + (failing === 1 ? "" : "s") + " need attention" : "Recent source checks available";
+  node.innerHTML = SEARCH_SOURCES.map((key) => {
+    const info = providers[key] || {status:"unobserved"};
+    const latency = info.response_ms == null && info.median_ms == null ? "" :
+      " · " + (info.response_ms == null ? "median " : "response ") + (info.response_ms ?? info.median_ms) + " ms";
+    const checked = info.checked_at ? " · " + new Date(info.checked_at).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"}) : "";
+    const detail = info.reason || (info.status === "unobserved" ? "Not checked yet" :
+      info.status === "down" ? "Request failed" :
+      info.status === "degraded" ? "Provider returned limited results" : "Responding");
+    return '<div class="health-row"><strong>' + escapeHtml(labels[key]) + '</strong><span class="health-state ' +
+      escapeHtml(info.status) + '">' + escapeHtml(info.status === "unobserved" ? "pending" : info.status) +
+      '</span><small>' + escapeHtml(detail + latency + checked) + '</small></div>';
   }).join("");
+}
+function restoreSourceHealth() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(SOURCE_HEALTH_KEY) || "null");
+    if (saved && typeof saved === "object") for (const source of SEARCH_SOURCES) {
+      const item = saved[source];
+      if (item && ["healthy","degraded","down"].includes(item.status) &&
+          Number.isFinite(Date.parse(item.checked_at)) && Date.now() - Date.parse(item.checked_at) < 30 * 60 * 1000)
+        state.sourceHealth[source] = item;
+    }
+  } catch { /* Private browsing may restrict session storage. */ }
+}
+function recordSourceHealth(source, data, elapsed) {
+  const issue = Boolean(data?.error || data?.provider_issue);
+  state.sourceHealth[source] = {
+    status: issue ? (data?.items?.length ? "degraded" : "down") : "healthy",
+    response_ms: Math.round(elapsed), checked_at: new Date().toISOString(),
+    reason: issue ? (data?.items?.length ? "Partial provider response" : "Provider unavailable") : "Responding"
+  };
+  try { sessionStorage.setItem(SOURCE_HEALTH_KEY, JSON.stringify(state.sourceHealth)); } catch {}
+  if (state.hosted) renderHealth({providers:state.sourceHealth});
+}
+function renderSupport() {
+  const node = $("#supportStatus");
+  if (!node) return;
+  node.textContent = isAuthenticated() ?
+    "Signed in as " + (state.profile.email || state.profile.name) + ". Send your message to saaiabhishikth@gmail.com." :
+    "Sign in with Google to send a message to saaiabhishikth@gmail.com.";
 }
 
 async function pollRefresh() {
@@ -137,7 +175,7 @@ async function setupGoogle(clientId) {
           headers:{"Content-Type":"application/json"}, body:JSON.stringify({credential})});
         if (!response.ok) throw new Error("Verification failed");
         const person = await response.json();
-        loadWorkspace({id:"google." + person.sub, name:person.name || "Google user"});
+        loadWorkspace({id:"google." + person.sub, name:person.name || "Google user", email:person.email});
         closeProfileMenu();
         setView("home");
         showToast("Google workspace opened");
@@ -616,15 +654,18 @@ async function hydrateVideoMetadata(items, version) {
 async function fetchLive(source, version, page = 1) {
   state.loading.add(source);
   renderProgress();
+  const healthStart = performance.now();
   try {
     const data = await getJson("/api/live?" + new URLSearchParams({source, q:state.query, page:String(page)}));
     if (version !== state.searchVersion) return;
+    if (page === 1) recordSourceHealth(source, data, performance.now() - healthStart);
     const oldItems = page > 1 ? (state.live[source]?.items || []) : [];
     state.live[source] = {...data, items: oldItems.concat(data.items || []), error:Boolean(data.error || (data.provider_issue && !(data.items || []).length))};
     register(data.items || []);
     if (source === "videos") hydrateVideoMetadata(data.items || [], version);
   } catch {
     if (version === state.searchVersion) {
+      if (page === 1) recordSourceHealth(source, {error:true,items:[]}, performance.now() - healthStart);
       const previous = state.live[source] || {items:[]};
       state.live[source] = {...previous, notice:"Unavailable", error:true, has_more:false};
     }
@@ -973,12 +1014,12 @@ function clearFilters() {
 }
 function exportBookmarks() {
   if (!isAuthenticated()) { showLoginPrompt(); return; }
-  const data = {app:"Resource Finder", version:2, exported_at:new Date().toISOString(), bookmarks:state.bookmarks, collections:state.collections, history:state.history};
+  const data = {app:"FindrLib", version:2, exported_at:new Date().toISOString(), bookmarks:state.bookmarks, collections:state.collections, history:state.history};
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "resource-finder-workspace.json";
+  anchor.download = "findrlib-workspace.json";
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -1001,6 +1042,7 @@ async function importBookmarks(file) {
   } catch { showToast("This file is not a valid bookmark export"); }
 }
 async function init() {
+  restoreSourceHealth();
   loadWorkspace({id:"guest", name:"Guest"});
   setView("home");
   fetchFeatured();
@@ -1016,14 +1058,14 @@ async function init() {
     state.videoMetadata = status.video_metadata !== false;
     if (state.hosted) {
       $("#agentStatus").textContent = "Sources checked on search";
-      $("#providerHealth").innerHTML = '<div class="health-empty">Search to see current source status.</div>';
+      renderHealth({providers:state.sourceHealth});
     }
     state.nightlyInstalled = !!status.scheduled_refresh?.installed;
     renderRefresh(status.catalog_refresh);
     renderHealth(status.provider_health);
     state.supportEmail = status.support_email || "";
-    $("#supportSubmit").textContent = state.supportEmail ? "Open email draft →" : "Download feedback draft ↓";
-    $("#supportStatus").textContent = state.supportEmail ? "Your email app will open a draft addressed to support. Send it there to deliver your feedback." : "No support address is configured yet. Download a draft to keep your feedback; it will not be delivered automatically.";
+    $("#supportSubmit").textContent = "Send to support →";
+    renderSupport();
     if (status.google_signin_available) setupGoogle(status.google_client_id);
     else $("#googleHint").textContent = status.google_client_id ?
       "Install the Google verification dependencies from requirements-auth.txt, then restart." :
@@ -1066,30 +1108,46 @@ $$("[data-category]").forEach((button) => button.addEventListener("click", () =>
 $$("[data-section]").forEach((button) => button.addEventListener("click", () => goSection(button.dataset.section)));
 $$(".top-brand, .top-links [data-view], .landing-section [data-view]").forEach((button) =>
   button.addEventListener("click", () => setView(button.dataset.view)));
-$("#supportForm").addEventListener("submit", (event) => {
+$("#supportForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (!event.target.reportValidity()) return;
-  const type = $("#feedbackType").value;
+  const form = event.currentTarget;
+  if (!form.reportValidity()) return;
+  if (!isAuthenticated() || !state.profile.email) {
+    $("#supportStatus").textContent = "Sign in with Google first so your email is included with the message.";
+    goSection("accountAccess");
+    return;
+  }
+  if (!state.hosted) {
+    $("#supportStatus").textContent = "Direct delivery is available on resourcefinders.netlify.app.";
+    return;
+  }
   const subject = $("#feedbackSubject").value.trim();
   const message = $("#feedbackMessage").value.trim();
   if (subject.length < 3 || message.length < 10) {
     $("#supportStatus").textContent = "Please add a subject and at least 10 characters of detail.";
     return;
   }
-  const body = "Resource Finder feedback\nType: " + type + "\nSubject: " + subject + "\n\n" + message;
-  if (state.supportEmail) {
-    const url = "mailto:" + state.supportEmail + "?subject=" + encodeURIComponent("Resource Finder: " + subject) +
-      "&body=" + encodeURIComponent(body);
-    const link = document.createElement("a"); link.href = url; link.click();
-    $("#supportStatus").textContent = "Email draft requested. Send it in your email app to deliver your feedback.";
-  } else {
-    const blob = new Blob([body], {type:"text/plain"});
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a"); link.href = url; link.download = "resource-finder-feedback.txt"; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    $("#supportStatus").textContent = "Feedback draft downloaded. It has not been sent; a support address is still needed.";
+  $("#supportEmailField").value = state.profile.email;
+  $("#supportNameField").value = state.profile.name;
+  const button = $("#supportSubmit");
+  button.disabled = true;
+  button.textContent = "Sending…";
+  $("#supportStatus").textContent = "Sending your message…";
+  try {
+    const response = await fetch("/", {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+      body:new URLSearchParams(new FormData(form)).toString()});
+    if (!response.ok) throw new Error("Submission failed");
+    $("#feedbackSubject").value = "";
+    $("#feedbackMessage").value = "";
+    $("#supportStatus").textContent = "Message submitted. Thank you for helping improve FindrLib.";
+  } catch {
+    $("#supportStatus").textContent = "Could not send your message. Please try again.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Send to support →";
   }
 });
+
 $("#refreshNow").addEventListener("click", async () => {
   try {
     const response = await fetch("/api/catalog/refresh", {method:"POST"});

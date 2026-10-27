@@ -66,7 +66,7 @@
 @media(max-width:1100px){.top-links{gap:10px}.catalog-stat{display:none}.category-grid,.feature-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.top-links{display:none}.topbar{justify-content:flex-start}.top-actions{margin-left:auto}.featured-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.content{padding:20px 16px 35px}.topbar{height:64px;padding:0 14px;gap:8px}.top-brand{font-size:15px}.top-actions #createNav{display:none}.top-actions #topSaved{display:none}.public-hero{padding:30px 22px;border-radius:16px}.public-hero:after{display:none}.public-hero h1{font-size:36px}.hero-proof{gap:8px}.hero-proof span+span:before{margin-right:8px}.category-grid,.feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.steps-grid,.featured-grid,.about-section{grid-template-columns:1fr}.support-form{grid-template-columns:1fr}.auth-section{grid-template-columns:1fr}.site-footer{grid-template-columns:1fr}.site-footer nav{justify-content:flex-start}.home-view .provider-health{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:480px){.top-brand-mark{display:none}.top-brand{font-size:14px}.top-actions #loginNav{font-size:11px}.home-search{display:grid;grid-template-columns:22px 1fr;padding:10px 13px}.home-search .search-button{grid-column:1/-1}.category-grid,.feature-grid{grid-template-columns:1fr}.public-hero h1{font-size:32px}.landing-heading{align-items:start}.auth-section #googleButton{min-width:0}.home-view .refresh-panel{flex-direction:column;align-items:flex-start}.skeleton-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.top-brand-mark{display:grid;flex:0 0 32px;width:32px;height:32px}.top-brand{font-size:14px}.top-actions #loginNav{font-size:11px}.home-search{display:grid;grid-template-columns:22px 1fr;padding:10px 13px}.home-search .search-button{grid-column:1/-1}.category-grid,.feature-grid{grid-template-columns:1fr}.public-hero h1{font-size:32px}.landing-heading{align-items:start}.auth-section #googleButton{min-width:0}.home-view .refresh-panel{flex-direction:column;align-items:flex-start}.skeleton-grid{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.sidebar,.category-grid button{transition:none}.skeleton-card{animation:none}}
 .skeleton-grid{grid-column:1/-1}
 @media(max-width:420px){.top-actions #topProfile{display:block;max-width:100px}}
@@ -254,7 +254,7 @@
 .source-warning{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 15px;border:1px solid #e8dfcf;border-radius:9px;background:#fffaf0;color:#665b44;font-size:12px;margin-bottom:12px}
 @media(max-width:620px){.tabs .tab{min-height:44px}.filters .check-filter,.filters .select-filter,.filters .clear-filters{min-height:44px}.filters select{min-height:42px}.card-actions a,.card-actions button,.bookmark-btn{min-height:44px}.home-discovery-extras .hero-proof{gap:8px}}
 
-/* ResourceFinder owner branding */
+/* FindrLib owner branding */
 .brand-mark,.top-brand-mark{background:#fff;overflow:hidden}
 .brand-mark .brand-image,.top-brand-mark .brand-image{display:block;width:100%;height:100%;object-fit:contain}
 .site-footer small a,.legal-section a{color:inherit;text-decoration:underline;text-underline-offset:2px}
@@ -270,3 +270,10 @@
 .social-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:9px}.social-icon img{display:block;width:19px;height:19px;filter:brightness(0) invert(1)}
 .social-icon-github{background:#24292f}.social-icon-linkedin{background:#0a66c2}.social-link>span:nth-child(2){display:grid;gap:2px}.social-link strong{font-size:12px}.social-link small{font-size:10px;color:#6f858a}.social-arrow{margin-left:auto;color:#408f83;font-size:17px}
 @media(max-width:620px){.health-heading{flex-wrap:wrap}.health-badge{font-size:10px}.social-links{margin-top:16px}}
+
+/* FindrLib artwork is supplied with white margins; crop it in CSS without changing the source images. */
+.top-brand-wordmark{display:block;position:relative;flex:0 0 208px;width:208px;height:54px;overflow:hidden}
+.top-brand-wordmark img{position:absolute;top:50%;left:0;display:block;width:100%;height:auto;transform:translateY(-50%)}
+.sidebar-header .brand-mark .brand-image{width:100%;height:100%;object-fit:cover}
+@media(max-width:700px){.top-brand-wordmark{flex-basis:165px;width:165px;height:44px}}
+@media(max-width:360px){.top-brand-wordmark{flex-basis:139px;width:139px;height:38px}}
