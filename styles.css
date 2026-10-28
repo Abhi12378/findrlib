@@ -254,7 +254,7 @@
 .source-warning{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 15px;border:1px solid #e8dfcf;border-radius:9px;background:#fffaf0;color:#665b44;font-size:12px;margin-bottom:12px}
 @media(max-width:620px){.tabs .tab{min-height:44px}.filters .check-filter,.filters .select-filter,.filters .clear-filters{min-height:44px}.filters select{min-height:42px}.card-actions a,.card-actions button,.bookmark-btn{min-height:44px}.home-discovery-extras .hero-proof{gap:8px}}
 
-/* FindrLib owner branding */
+/* ResourceFinder owner branding */
 .brand-mark,.top-brand-mark{background:#fff;overflow:hidden}
 .brand-mark .brand-image,.top-brand-mark .brand-image{display:block;width:100%;height:100%;object-fit:contain}
 .site-footer small a,.legal-section a{color:inherit;text-decoration:underline;text-underline-offset:2px}
@@ -271,7 +271,7 @@
 .social-icon-github{background:#24292f}.social-icon-linkedin{background:#0a66c2}.social-link>span:nth-child(2){display:grid;gap:2px}.social-link strong{font-size:12px}.social-link small{font-size:10px;color:#6f858a}.social-arrow{margin-left:auto;color:#408f83;font-size:17px}
 @media(max-width:620px){.health-heading{flex-wrap:wrap}.health-badge{font-size:10px}.social-links{margin-top:16px}}
 
-/* FindrLib artwork is supplied with white margins; crop it in CSS without changing the source images. */
+/* ResourceFinder artwork is supplied with white margins; crop it in CSS without changing the source images. */
 .top-brand-wordmark{display:block;position:relative;flex:0 0 208px;width:208px;height:54px;overflow:hidden}
 .top-brand-wordmark img{position:absolute;top:50%;left:0;display:block;width:100%;height:auto;transform:translateY(-50%)}
 .sidebar-header .brand-mark .brand-image{width:100%;height:100%;object-fit:cover}

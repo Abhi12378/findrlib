@@ -1014,12 +1014,12 @@ function clearFilters() {
 }
 function exportBookmarks() {
   if (!isAuthenticated()) { showLoginPrompt(); return; }
-  const data = {app:"FindrLib", version:2, exported_at:new Date().toISOString(), bookmarks:state.bookmarks, collections:state.collections, history:state.history};
+  const data = {app:"ResourceFinder", version:2, exported_at:new Date().toISOString(), bookmarks:state.bookmarks, collections:state.collections, history:state.history};
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "findrlib-workspace.json";
+  anchor.download = "resourcefinder-workspace.json";
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -1139,7 +1139,7 @@ $("#supportForm").addEventListener("submit", async (event) => {
     if (!response.ok) throw new Error("Submission failed");
     $("#feedbackSubject").value = "";
     $("#feedbackMessage").value = "";
-    $("#supportStatus").textContent = "Message submitted. Thank you for helping improve FindrLib.";
+    $("#supportStatus").textContent = "Message submitted. Thank you for helping improve ResourceFinder.";
   } catch {
     $("#supportStatus").textContent = "Could not send your message. Please try again.";
   } finally {
